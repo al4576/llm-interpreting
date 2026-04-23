@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>first draft</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #060606;
+      --line: #9a9a9a;
+      --line-faint: #2a2a2a;
+      --text: #eeeeee;
+      --muted: #a5a5a5;
+      --accent: #ffffff;
+      --todo: #c8c8c8;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", system-ui, sans-serif;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 56px 56px;
+    }
+
+    .dive {
+      scroll-snap-type: y proximity;
+      overflow-y: auto;
+      height: 100vh;
+    }
+
+    .layer {
+      min-height: 100vh;
+      scroll-snap-align: start;
+      position: relative;
+      border-bottom: 1px solid var(--line-faint);
+      padding: 4rem clamp(1rem, 6vw, 5rem) 5rem;
+    }
+
+    .depth {
+      position: fixed;
+      left: 1rem;
+      top: 1rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      color: #d8d8d8;
+      text-transform: uppercase;
+      z-index: 20;
+      mix-blend-mode: difference;
+    }
+
+    .depth b {
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    .nav {
+      position: fixed;
+      right: 1rem;
+      top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      z-index: 20;
+    }
+
+    .nav a {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.7rem;
+      color: #c0c0c0;
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      padding: 0.2rem 0.5rem;
+      border: 1px solid transparent;
+    }
+
+    .nav a.current {
+      color: #ffffff;
+      border-color: #7a7a7a;
+    }
+
+    .layer-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 0.8rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .layer-number {
+      font-family: "JetBrains Mono", monospace;
+      font-size: clamp(2.5rem, 6vw, 4.4rem);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      color: #ffffff;
+      line-height: 1;
+    }
+
+    .layer-title {
+      font-family: "JetBrains Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font-size: 0.82rem;
+      color: #d5d5d5;
+    }
+
+    .layer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 1.4rem;
+    }
+
+    .theory {
+      border-left: 2px solid var(--line);
+      padding: 0.5rem 0.9rem;
+      background: rgba(255,255,255,0.015);
+    }
+
+    .theory blockquote {
+      margin: 0 0 0.6rem;
+      font-style: italic;
+      color: #e5e5e5;
+      line-height: 1.55;
+      font-size: 0.96rem;
+    }
+
+    .theory cite {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      color: #b0b0b0;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-style: normal;
+    }
+
+    .theory .frame-label {
+      display: block;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.7rem;
+      color: #aaa;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    h1, h2, h3 {
+      margin: 0.4rem 0 0.35rem;
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    h1 { font-size: clamp(1.25rem, 2.3vw, 1.65rem); }
+    h2 { font-size: 1rem; }
+    h3 { font-size: 0.88rem; color: #dcdcdc; }
+
+    p, li {
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 0.96rem;
+      margin: 0.4rem 0;
+    }
+
+    .layman {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      color: #d2d2d2;
+      border-left: 2px solid #8a8a8a;
+      padding-left: 0.55rem;
+      margin: 0.5rem 0 0.8rem;
+    }
+
+    .math {
+      border: 1px solid #8a8a8a;
+      padding: 0.65rem 0.75rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      background: #0a0a0a;
+      overflow-x: auto;
+      white-space: pre;
+      margin-top: 0.55rem;
+    }
+
+    .shape {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.74rem;
+      color: #c0c0c0;
+      margin-top: 0.55rem;
+      padding: 0.3rem 0.5rem;
+      border: 1px dashed #6a6a6a;
+      display: inline-block;
+    }
+
+    .shape b { color: #ffffff; font-weight: 500; }
+
+    .step {
+      border: 1px solid var(--line);
+      margin-top: 1rem;
+      padding: 1rem 1.1rem;
+      background: rgba(8,8,8,0.85);
+    }
+
+    .step-head {
+      display: flex;
+      gap: 0.6rem;
+      align-items: baseline;
+      margin-bottom: 0.3rem;
+    }
+
+    .step-num {
+      font-family: "JetBrains Mono", monospace;
+      color: #9a9a9a;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+    }
+
+    .step-inner {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 1rem;
+    }
+
+    .preview {
+      border: 1px solid #7a7a7a;
+      background: #0a0a0a;
+      padding: 0.6rem;
+      min-height: 180px;
+    }
+
+    .preview .label {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #b0b0b0;
+      margin-bottom: 0.35rem;
+    }
+
+    .figcap {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      color: #b0b0b0;
+      line-height: 1.5;
+      margin-top: 0.45rem;
+    }
+
+    .figcap b { color: #fff; font-weight: 500; letter-spacing: 0.05em; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.45rem; }
+    .chip {
+      border: 1px solid #8a8a8a;
+      padding: 0.2rem 0.45rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.74rem;
+      text-transform: lowercase;
+    }
+    .chip.highlight { border-color: #fff; background: #151515; color: #fff; }
+    .mono { font-family: "JetBrains Mono", monospace; font-size: 0.8rem; color: #dfdfdf; }
+
+    .dot-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.5rem 0.65rem;
+      margin-top: 0.45rem;
+      max-width: 240px;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #c8c8c8; opacity: 0.65; justify-self: center;
+    }
+    .dot.near { background: #fff; opacity: 0.95; }
+    .dot.focus { background: #fff; opacity: 1; width: 10px; height: 10px; }
+
+    .attn-grid {
+      margin-top: 0.5rem;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 0.2rem;
+    }
+    .cell { height: 22px; background: #222; }
+    .cell.row-focus { outline: 1px solid #fff; outline-offset: -1px; }
+
+    .bars { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.32rem; }
+    .bar {
+      height: 18px;
+      border: 1px solid #8a8a8a;
+      background: linear-gradient(to right, #d8d8d8 var(--w), #0a0a0a var(--w));
+      position: relative;
+    }
+    .bar.top {
+      background: linear-gradient(to right, #fff var(--w), #0a0a0a var(--w));
+      border-color: #fff;
+    }
+    .bar span {
+      position: absolute;
+      left: 0.45rem; top: 0.05rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.7rem;
+      color: #050505;
+      mix-blend-mode: difference;
+    }
+
+    .chat-surface {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 4rem 1rem;
+      position: relative;
+    }
+
+    .chat-wrap {
+      width: min(720px, 94vw);
+      border: 1px solid #333;
+      background: #0b0b0b;
+      padding: 1.2rem 1.2rem 1rem;
+      position: relative;
+      z-index: 1;
+      transition: opacity 450ms ease, transform 450ms ease;
+    }
+
+    .chat-wrap.shattering {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+
+    .chat-wrap .bar-top {
+      display: flex;
+      justify-content: space-between;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      color: #9a9a9a;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.9rem;
+      text-transform: uppercase;
+    }
+
+    .chat-wrap .ask {
+      color: #d0d0d0;
+      font-size: 1.05rem;
+      line-height: 1.55;
+      margin: 0.8rem 0 1.1rem;
+    }
+
+    .chat-wrap .composer {
+      border: 1px solid #3a3a3a;
+      padding: 0.7rem 0.8rem;
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+      background: #060606;
+    }
+
+    .chat-wrap textarea {
+      flex: 1;
+      resize: none;
+      background: transparent;
+      border: 0;
+      outline: 0;
+      color: #f5f5f5;
+      font-family: "Inter", system-ui, sans-serif;
+      font-size: 1rem;
+      min-height: 1.4rem;
+      max-height: 6rem;
+      line-height: 1.4;
+    }
+
+    .chat-wrap button.submit {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      background: #fff;
+      color: #000;
+      border: 0;
+      padding: 0.45rem 0.8rem;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .chat-wrap .hint {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.7rem;
+      color: #888;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.8rem;
+    }
+
+    .shatter {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      opacity: 0;
+      transition: opacity 120ms ease;
+    }
+    .shatter.active { opacity: 1; }
+    .shatter .tile {
+      border: 0.5px solid rgba(255,255,255,0.08);
+      background: #0b0b0b;
+      transform: translate(0,0) rotate(0deg);
+      opacity: 1;
+      transition: transform 900ms cubic-bezier(.22,.9,.28,1), opacity 900ms ease;
+    }
+    .shatter.fired .tile {
+      opacity: 0;
+      transform: translate(var(--tx), var(--ty)) rotate(var(--r));
+    }
+
+    .placeholder-note {
+      margin-top: 1.2rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      color: var(--todo);
+      border: 1px dashed #666;
+      padding: 0.8rem;
+      line-height: 1.55;
+    }
+
+    .todo-board {
+      margin-bottom: 1rem;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .todo-board .board-title,
+    .todo-board .board-subtitle {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      color: var(--todo);
+      letter-spacing: normal;
+      text-transform: none;
+      margin: 0 0 0.4rem 0;
+    }
+
+    .todo-board ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .theory ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .todo-board li,
+    .theory ul li {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      color: var(--todo);
+      margin: 0.35rem 0;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 820px) {
+      .layer-grid { grid-template-columns: 1fr; }
+      .step-inner { grid-template-columns: 1fr; }
+      .nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="depth" id="depth">LAYER <b>01</b> / 06 &nbsp;&middot;&nbsp; INTERFACE</div>
+  <nav class="nav" id="nav">
+    <a href="#l1" data-layer="1" class="current">01 interface</a>
+    <a href="#l2" data-layer="2">02 transformer</a>
+    <a href="#l3" data-layer="3">03 dataset</a>
+    <a href="#l4" data-layer="4">04 hardware</a>
+    <a href="#l5" data-layer="5">05 transistor</a>
+    <a href="#l6" data-layer="6">06 physics</a>
+  </nav>
+
+  <main class="dive" id="dive">
+    <section class="layer" id="project-todos" data-layer="1">
+      <div class="todo-board">
+        <div class="board-title">Project TODO Board</div>
+        <ul>
+          <li>todo: i want to not just have it be 'scrolly' but have users actually be able to click INTO deeper the parts they're specifically interested in, like a sandbox. leaving it as scrolling for now because i'm not sure how i'm going to do that...</li>
+          <li>todo: layman explanation for everything</li>
+          <li>todo: visual language and style consistency across all layers, improve the aesthetic...</li>
+          <li>todo: on that note, make the color pallette actually good, not just b/w lol, rn this for simplicity, but use colors as accents to emphasize points and make it more digestible (??) reread old readings lol</li>
+          <li>todo: citations and source links for data and maybe a further reading list (attention is all you need :P)</li>
+          <li>todo: interaction/animation polish checklist (scroll timing, hover states, keyboard behavior, maybe i say screw mobile layout)</li>
+          <li>todo: ask non-technical people to look at it as final copy-edit for tone, readability, and "for dummies" clarity</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="layer" id="l1" data-layer="1">
+      <div class="layer-header">
+        <div>
+          <div class="layer-number">01</div>
+          <div class="layer-title">Interface</div>
+        </div>
+      </div>
+      <div class="layer-grid">
+        <div class="theory">
+          <span class="frame-label">Build Notes &middot; Layer 01</span>
+          <ul>
+            <li>todo: make this more like chatgpt interface, have the screen actually shatter when 'enter' is pressed.</li>
+            <li>todo: rebuild full shell layout (left sidebar, top model bar, message thread, bottom composer) with realistic spacing and proportions.</li>
+            <li>todo: add keyboard behavior exactly like chat apps (enter sends, shift+enter adds newline) and block accidental duplicate submits.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="placeholder-note">TODO draft: build a realistic fake chat ui + shatter transition timeline (input lock, fracture, fade, fall, then dive to layer 02).</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="layer" id="l2" data-layer="2">
+      <div class="layer-header">
+        <div>
+          <div class="layer-number">02</div>
+          <div class="layer-title">Transformer</div>
+        </div>
+      </div>
+
+      <div class="layer-grid">
+        <div class="theory">
+          <span class="frame-label">Build Notes &middot; Layer 02</span>
+          <ul>
+            <li>todo: replace this note area with a compact "what you're seeing now" explainer for the math layer, in plain language lol (should apply to all 'layers'), add 2-3 sentence "for dummies" summary that says this layer is numbers + matrix ops + probabilities, not understanding, tie the theory back in a little</li>
+            <li>todo: include a little "how to use this section" checklist (click token chips, inspect heatmap rows, try temperature slider).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-head">
+          <span class="step-num">2.1</span>
+          <h3>Tokenization</h3>
+        </div>
+        <div class="step-inner">
+          <div>
+            <p>Convert text string <code>x</code> into token IDs using a fixed BPE-style vocabulary.</p>
+            <div class="math">x = "The unbelievable speed"
+Tokenizer(x) -> [464, 403, 9121, 418, 2866]</div>
+            <p class="shape"><b>in:</b> string &nbsp; <b>out:</b> [n] token IDs</p>
+          </div>
+          <div class="preview">
+            <div class="label">Figure 2.1</div>
+            <div class="chips">
+              <span class="chip">the</span><span class="chip highlight">un</span><span class="chip">believ</span><span class="chip">able</span><span class="chip">speed</span>
+            </div>
+            <p class="mono">IDs: [464, <b style="color:#fff">403</b>, 9121, 418, 2866]</p>
+            <p class="figcap"><b>Figure 2.1</b> &nbsp; The highlighted piece <code>un</code> is a reusable subword unit drawn from the vocabulary.</p>
+          </div>
+        </div>
+        <div class="placeholder-note">
+              todo: users should be able to click on BPE and SEE what that means... visualize the byte-pair encoding... i would like to tie it into the interactivity but maybe animation like 3b1b is sufficient
+          <br>todo: interactivity spec - user types directly into tokenizer input and token chips update on every keystroke
+          <br>todo: hover (and keyboard focus) on a chip should reveal token id + token rank in a tooltip; selected chip gets persistent highlight, let's use color wisely! debating putting the BPE animation in here too
+          <br>todo: live stats row should recalc instantly (token count, char count, chars/token), and 'unknown' strings should visibly fall back to char-level chunks; make sure they undrestand that tokens are NOT words/chars but rather a mix based off training data
+          <br>todo: add reset-to-default sentence control so users can try different prompts
+          <br>note: maybe borrow 3b1b animation style for the vector representations?
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-head">
+          <span class="step-num">2.2</span>
+          <h3>Embedding Lookup</h3>
+        </div>
+        <div class="step-inner">
+          <div>
+            <p>Token IDs index rows of embedding matrix <code>E</code>. Each row is a vector in <code>R^d</code>.</p>
+            <div class="math">E ∈ R^(V x d)
+e_i = E[t_i]
+h_i^(0) = e_i + p_i</div>
+            <p class="shape"><b>in:</b> [n] IDs &nbsp; <b>out:</b> [n, d] vectors</p>
+          </div>
+          <div class="preview">
+            <div class="label">Figure 2.2</div>
+            <div class="dot-grid">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span class="dot"></span><span class="dot near"></span><span class="dot"></span><span class="dot near"></span><span class="dot"></span>
+              <span class="dot"></span><span class="dot"></span><span class="dot focus"></span><span class="dot"></span><span class="dot"></span>
+              <span class="dot"></span><span class="dot"></span><span class="dot near"></span><span class="dot"></span><span class="dot"></span>
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            </div>
+            <p class="figcap"><b>Figure 2.2</b> &nbsp; 2D projection of embeddings. Filled point = selected token; bright points = 3 nearest neighbors by cosine similarity.</p>
+          </div>
+        </div>
+        <div class="placeholder-note">
+              todo: interactivity spec - hovering a point enlarges it, shows word label, and draws lines to 3 nearest neighbors with cosine values; maybe not user input (would be cool though) but give a few examples and show the '3d' vector space then flatten to 2d with animation 
+          <br>todo: clicking analogy buttons should animate vector steps (a - b + c) in order, then pulse the resulting point and update result text
+          <br>todo: include a cluster legend toggle so users can isolate different semantic clusters and see separation clearly
+          <br>note: i actually do think the math is important to really get why these are the nearest neighbors, so i need to find a way to make it make ... sense... all the formulas and dimensions i mean... wow 3b1b did a good job LOL
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-head">
+          <span class="step-num">2.3</span>
+          <h3>Self-Attention</h3>
+        </div>
+        <div class="step-inner">
+          <div>
+            <p>Each token produces Query, Key, Value. Attention is a weighted sum of values, weighted by key/query similarity.</p>
+            <div class="math">Q = HW_Q, K = HW_K, V = HW_V
+S = (QK^T) / sqrt(d_k)
+A = softmax(S)
+Z = AV</div>
+            <p class="shape"><b>in:</b> [n, d] &nbsp; <b>out:</b> [n, d] (context-mixed)</p>
+          </div>
+          <div class="preview">
+            <div class="label">Figure 2.3</div>
+            <div class="attn-grid">
+              <span class="cell" style="background:#3d3d3d"></span><span class="cell" style="background:#676767"></span><span class="cell" style="background:#2f2f2f"></span><span class="cell" style="background:#222"></span><span class="cell" style="background:#7a7a7a"></span><span class="cell" style="background:#2a2a2a"></span><span class="cell" style="background:#525252"></span><span class="cell" style="background:#1f1f1f"></span>
+              <span class="cell" style="background:#2d2d2d"></span><span class="cell" style="background:#8b8b8b"></span><span class="cell" style="background:#595959"></span><span class="cell" style="background:#2a2a2a"></span><span class="cell" style="background:#252525"></span><span class="cell" style="background:#6f6f6f"></span><span class="cell" style="background:#4a4a4a"></span><span class="cell" style="background:#212121"></span>
+              <span class="cell row-focus" style="background:#232323"></span><span class="cell row-focus" style="background:#454545"></span><span class="cell row-focus" style="background:#c9c9c9"></span><span class="cell row-focus" style="background:#a0a0a0"></span><span class="cell row-focus" style="background:#2a2a2a"></span><span class="cell row-focus" style="background:#525252"></span><span class="cell row-focus" style="background:#3a3a3a"></span><span class="cell row-focus" style="background:#212121"></span>
+              <span class="cell" style="background:#1e1e1e"></span><span class="cell" style="background:#2a2a2a"></span><span class="cell" style="background:#505050"></span><span class="cell" style="background:#8d8d8d"></span><span class="cell" style="background:#717171"></span><span class="cell" style="background:#3c3c3c"></span><span class="cell" style="background:#2d2d2d"></span><span class="cell" style="background:#1f1f1f"></span>
+            </div>
+            <p class="figcap"><b>Figure 2.3</b> &nbsp; Rows = query tokens, columns = keys. Outlined row shows one token attending mostly to keys 3 and 4.</p>
+          </div>
+        </div>
+        <div class="placeholder-note">
+              todo: interactivity spec - clicking any token should highlight its entire heatmap row and dim all non-selected rows; let's try to use the original sentence if possible...
+          <br>todo: from selected row, draw curved arcs to top-k attended tokens; arc thickness and opacity should scale with attention weight
+          <br>todo: add head-switch (explain heads) buttons (syntactic/coreference/positional) that swap matrices 
+          <br>todo: include hover readout for each cell (query token, key token, exact weight) plus reset-to-default-token action
+          <br>note: hm. noticing how the math might be actually challenging lol... definitely a way to simplify but i dont want to directly rip 3b1b, so let me think about this more...
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-head">
+          <span class="step-num">2.4</span>
+          <h3>Next-Token Sampling</h3>
+        </div>
+        <div class="step-inner">
+          <div>
+            <p>Final hidden state is projected to logits over the vocabulary; softmax gives probabilities; decoding chooses.</p>
+            <div class="math">z = h_last W_out
+p_i = exp(z_i / T) / Σ_j exp(z_j / T)
+t_next ~ Categorical(p)</div>
+            <p class="shape"><b>in:</b> [d] final vector &nbsp; <b>out:</b> 1 sampled token</p>
+          </div>
+          <div class="preview">
+            <div class="label">Figure 2.4</div>
+            <div class="bars">
+              <div class="bar top" style="--w: 78%"><span>jumps</span></div>
+              <div class="bar" style="--w: 48%"><span>runs</span></div>
+              <div class="bar" style="--w: 36%"><span>leaps</span></div>
+              <div class="bar" style="--w: 24%"><span>sleeps</span></div>
+              <div class="bar" style="--w: 17%"><span>dives</span></div>
+            </div>
+            <p class="figcap"><b>Figure 2.4</b> &nbsp; Top-5 candidates under temperature T=1.0. Highlighted bar is the token sampled this step.</p>
+          </div>
+        </div>
+        <div class="placeholder-note">
+              todo: try to use original sentence if possible...
+          <br>todo: interactivity spec - moving temperature slider should immediately recompute softmax(logits / T) and animate bar widths/probability labels; clicking on the bars should show the math to get the probability
+          <br>todo: clicking "sample next token" should probabilistically choose one candidate, append it to prefix, and advance to next precomputed step
+          <br>todo: add reset button that restores initial prefix, step index, and default temperature
+        </div>
+      </div>
+    </section>
+
+    <section class="layer" id="l3" data-layer="3">
+      <div class="layer-header">
+        <div>
+          <div class="layer-number">03</div>
+          <div class="layer-title">Dataset</div>
+        </div>
+      </div>
+      <div class="layer-grid">
+        <div class="theory">
+          <span class="frame-label">Build Notes &middot; Layer 03</span>
+          <ul>
+            <li>todo: replace this with a "what data went in" panel using real percentages from model cards (common crawl, books, code, wikipedia, forums); need to do REAL RESEARCH</li>
+            <li>todo: add a language distribution mini-chart that shows english dominance + low-resource language underrepresentation/other biases and under-representations</li>
+            <li>todo: link every number in this layer to visible citations (gpt-3 paper, llama 2 report, gemini report) to show that it's actually real lol and being used (even if the datasets are like really vague...)</li>
+            <li>note: should i talk about training? because i just spent all of the previous segment talking about what happens when USERS use it but it doesn't answer HOW the machine gains its magic... so maybe i need 'even more' math and things here... i kind of want to if i can make the math simple...</li>
+          </ul>
+        </div>
+        <div>
+          <p>Training corpora combine Common Crawl, books, code, Wikipedia, Reddit, scraped forums, and licensed sources. The exact composition is usually undisclosed; what is disclosed is broad.</p>
+          <div class="placeholder-note">TODO draft: a breakdown visualization of documented corpora (Common Crawl share, books, code, forums) with GPT-3 / LLaMA 2 / Gemini model-card references (and maybe more math visualizations... but maybe itll go easier after the previous layer! show an animation of all that data flowing together and how the model EATS it to gain its semantics).</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="layer" id="l4" data-layer="4">
+      <div class="layer-header">
+        <div>
+          <div class="layer-number">04</div>
+          <div class="layer-title">Hardware</div>
+        </div>
+      </div>
+      <div class="layer-grid">
+        <div class="theory">
+          <span class="frame-label">Build Notes &middot; Layer 04</span>
+          <ul>
+            <li>todo: honestly i want to like. reconstruct a motherboard and its components and show how the model is actually running on it lol and then have that 'zoom out' to show the network and the datacenter and the server rack and the whole thing</li>
+            <li>todo: add a "per 1,000 queries" estimate block for kwh + water usage (and maybe other metrics like carbon emissions? have to be careful with this one...)</li>
+            <li>todo: include a visual scale comparison (laptop gpu vs datacenter accelerator cluster)</li>
+          </ul>
+        </div>
+        <div>
+          <p>Per-inference energy is small; aggregate energy at serving scale is not. Training a frontier model uses tens of megawatt-hours; serving it uses more over its lifetime.</p>
+          <div class="placeholder-note">TODO draft: motherboard and its components (hoverable to show more details) and then 'zoom out' to show the network and the datacenter and the server rack and the whole thing.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="layer" id="l5" data-layer="5">
+      <div class="layer-header">
+        <div>
+          <div class="layer-number">05</div>
+          <div class="layer-title">Transistor</div>
+        </div>
+      </div>
+      <div class="layer-grid">
+        <div class="theory">
+          <span class="frame-label">Build Notes &middot; Layer 05</span>
+          <ul>
+            <li>todo: replace this with a transistor-to-logic explainer panel that starts at "switch on/off" then climbs to nand/nor gates.</li>
+            <li>todo: add an interactive truth-table widget where toggling a/b immediately updates nand output.</li>
+            <li>todo: add one tiny animated path highlight showing current flow state when gate is on vs off.</li>
+            <li>todo: include one concrete scale metric here (h100 has ~80 billion transistors) and connect it back to one generated reply/this should be the layer when people choose to zoom in on the hardware</li>
+          </ul>
+        </div>
+        <div>
+          <p>Multiplication and addition, on which the whole transformer rests, are implemented by networks of transistors behaving as NAND / NOR logic gates.</p>
+          <div class="placeholder-note">TODO draft: zoom from matrix-multiply pseudocode -&gt; ALU schematic -&gt; NAND-gate truth table -&gt; transistor cross-section.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="layer" id="l6" data-layer="6">
+      <div class="layer-header">
+        <div>
+          <div class="layer-number">06</div>
+          <div class="layer-title">Physics</div>
+        </div>
+      </div>
+      <div class="layer-grid">
+        <div class="theory">
+          <span class="frame-label">Build Notes &middot; Layer 06</span>
+          <ul>
+            <li>todo: replace this with a clean "physics floor" panel that explains voltage states, gate control, and switching without jargon overload</li>
+            <li>todo: add a simple animated transistor cross-section where moving gate voltage slider changes channel conductivity</li>
+            <li>todo: include a short formula strip (very minimal) and plain-language captions for each symbol</li>
+            <li>todo: finish with a one-screen recap tying all layers together: interface illusion -> math -> data -> hardware -> transistors -> electrons.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="placeholder-note">TODO draft: a minimal animation of gate voltage -&gt; channel conduction, alongside the short list of equations that govern it.</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const depthEl = document.getElementById('depth');
+    const navLinks = document.querySelectorAll('#nav a');
+    const layers = document.querySelectorAll('.layer');
+    const names = {
+      '1': 'INTERFACE',
+      '2': 'TRANSFORMER',
+      '3': 'DATASET',
+      '4': 'HARDWARE',
+      '5': 'TRANSISTOR',
+      '6': 'PHYSICS'
+    };
+
+    const setCurrent = (n) => {
+      if (!n) return;
+      depthEl.innerHTML = `LAYER <b>${String(n).padStart(2, '0')}</b> / 06 &nbsp;&middot;&nbsp; ${names[n]}`;
+      navLinks.forEach((a) => a.classList.toggle('current', a.dataset.layer === n));
+    };
+
+    const dive = document.getElementById('dive');
+
+    const updateCurrent = () => {
+      const rootRect = dive.getBoundingClientRect();
+      const probe = rootRect.top + rootRect.height * 0.35;
+
+      let best = null;
+      let bestTop = -Infinity;
+      layers.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.top <= probe && r.top > bestTop) {
+          bestTop = r.top;
+          best = el;
+        }
+      });
+
+      const atBottom = dive.scrollTop + dive.clientHeight >= dive.scrollHeight - 2;
+      if (atBottom) best = layers[layers.length - 1];
+
+      if (best) setCurrent(best.dataset.layer);
+    };
+
+    dive.addEventListener('scroll', updateCurrent, { passive: true });
+    window.addEventListener('resize', updateCurrent);
+    updateCurrent();
+  </script>
+</body>
+</html>
